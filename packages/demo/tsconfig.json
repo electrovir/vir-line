@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "outDir": "./ts.out",
+        "rootDir": "./src"
+    },
+    "exclude": [
+        "./configs",
+        "./coverage",
+        "./ts.out",
+        "./node_modules",
+        "./test-files"
+    ],
+    "extends": "../../configs/tsconfig.base.json",
+    "references": [
+        {
+            "path": "../vir-line"
+        }
+    ]
+}
