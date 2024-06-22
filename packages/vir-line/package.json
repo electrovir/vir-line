@@ -1,6 +1,6 @@
 {
     "name": "vir-line",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "An assembly line / pipeline.",
     "keywords": [
         "assembly line",
@@ -22,6 +22,7 @@
         "url": "https://github.com/electrovir"
     },
     "type": "module",
+    "main": "dist/index.js",
     "module": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {

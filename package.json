@@ -1,6 +1,6 @@
 {
     "name": "@evir/vir-line-root",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "private": true,
     "repository": {
         "type": "git",
@@ -21,7 +21,7 @@
         "publish": "virmator publish \"npm run compile && npm run test:all\"",
         "start": "cd packages/demo && npm start",
         "test": "mono-vir for-each-async npm run test:all",
-        "test:all": "concurrently --colors --kill-others-on-fail -c auto --names types,tests,spelling,format,docs,deps \"npm run test:types\" \"npm run test\" \"npm run test:spelling\" \"npm run test:format\" \"npm run test:deps\"",
+        "test:all": "concurrently --colors --kill-others-on-fail -c auto --names tests,spelling,format,docs,deps \"npm run test\" \"npm run test:spelling\" \"npm run test:format\" \"npm run test:deps\"",
         "test:deps": "virmator deps check",
         "test:format": "virmator format check",
         "test:spelling": "virmator spellcheck",

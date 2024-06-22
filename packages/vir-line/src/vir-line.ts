@@ -148,6 +148,10 @@ export class VirLine<
         if (this.isUpdateLoopPaused) {
             makeWritable(this).isUpdateLoopPaused = false;
             this.dispatch(new VirLinePauseEvent({detail: false}));
+            this.updateRateCounters = {
+                calculatedAtHighResTimestamp: performance.now(),
+                updateCount: 0,
+            };
             this.runUpdateLoop();
             return true;
         } else {

@@ -13,7 +13,7 @@ Each stage is intended to directly mutate the state object that it is given.
 <!-- example-link: src/readme-examples/simple-construction.example.ts -->
 
 ```TypeScript
-import {VirLine, VirLineStage} from '../index';
+import {VirLine, VirLineStage} from 'vir-line';
 
 const countStage: VirLineStage<{count: number}> = {
     executor({state}) {

@@ -9,9 +9,6 @@ const baseConfig = generateDepCruiserConfig({
                 'src/index.ts',
             ],
         },
-        'not-to-unresolvable': {
-            to: ['vir-line'],
-        },
     },
     omitRules: [
         // enter rule names here to omit
