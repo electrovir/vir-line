@@ -467,6 +467,96 @@ describe(VirLine.name, () => {
         assert.isTrue(destroyEmitted);
     });
 
+    it(
+        'never collapses selected state object',
+        withVirLine(
+            [
+                [
+                    {
+                        stageId: {
+                            name: 'object mutator',
+                        },
+                        executor({
+                            state,
+                        }: {
+                            state: {count: number; entries: Record<string, Record<string, number>>};
+                        }) {
+                            state.count++;
+                            if (state.count % 2) {
+                                state.entries = {
+                                    one: {
+                                        child: 1,
+                                        child2: 2,
+                                    },
+                                    two: {
+                                        child: 1,
+                                        child2: 2,
+                                    },
+                                };
+                            } else {
+                                state.entries = {
+                                    one: {
+                                        child: 1,
+                                        child2: 2,
+                                    },
+                                };
+                            }
+                        },
+                    },
+                ],
+                {count: 0, entries: {}},
+            ],
+            async ({virLine}) => {
+                const dataReceived: Record<string, Record<string, number>>[] = [];
+
+                virLine.listenToState(true, {entries: true}, (data) => {
+                    dataReceived.push(data);
+                });
+
+                await virLine.triggerUpdate();
+                await virLine.triggerUpdate();
+                await virLine.triggerUpdate();
+                await virLine.triggerUpdate();
+
+                assert.deepStrictEqual(dataReceived, [
+                    {},
+                    {
+                        one: {
+                            child: 1,
+                            child2: 2,
+                        },
+                        two: {
+                            child: 1,
+                            child2: 2,
+                        },
+                    },
+                    {
+                        one: {
+                            child: 1,
+                            child2: 2,
+                        },
+                    },
+                    {
+                        one: {
+                            child: 1,
+                            child2: 2,
+                        },
+                        two: {
+                            child: 1,
+                            child2: 2,
+                        },
+                    },
+                    {
+                        one: {
+                            child: 1,
+                            child2: 2,
+                        },
+                    },
+                ]);
+            },
+        ),
+    );
+
     it('fails on duplicate stage names', async () => {
         assertThrows(
             () =>
