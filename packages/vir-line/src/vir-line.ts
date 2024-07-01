@@ -1,4 +1,5 @@
 import {
+    AnyObject,
     MaybePromise,
     PickCollapsedSelection,
     SelectionSet,
@@ -27,6 +28,8 @@ import {
 import {VirLineOptions, defaultVirLineOptions, useAnimationFrames} from './options';
 import {StageExecutorParams, VirLineStage, assertValidStages, stageIdToString} from './stage';
 import {GenericListener, KeyedStateListeners, StagesToFullState} from './state';
+
+export type VirLineWithState<State extends AnyObject> = VirLine<[VirLineStage<State>]>;
 
 export class VirLine<
     const Stages extends ReadonlyArray<Readonly<VirLineStage<any>>>,
