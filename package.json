@@ -1,6 +1,6 @@
 {
     "name": "@evir/vir-line-root",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "private": true,
     "repository": {
         "type": "git",
@@ -29,8 +29,8 @@
     },
     "devDependencies": {
         "cspell": "^8.9.1",
-        "dependency-cruiser": "^16.3.3",
-        "esbuild": "^0.21.5",
+        "dependency-cruiser": "^16.3.5",
+        "esbuild": "^0.22.0",
         "mono-vir": "^1.0.1",
         "npm-check-updates": "~16.12.3",
         "prettier": "^3.3.2",

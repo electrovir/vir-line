@@ -1,6 +1,6 @@
 {
     "name": "@evir/vir-line-demo",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "private": true,
     "scripts": {
         "build": "virmator frontend build",
@@ -9,15 +9,15 @@
         "test:all": "npm run build"
     },
     "dependencies": {
-        "@augment-vir/common": "^29.1.4",
+        "@augment-vir/common": "^29.1.5",
         "element-vir": "^22.2.2",
         "run-time-assertions": "^1.5.1",
         "type-fest": "^4.20.1",
         "vir-line": "*"
     },
     "devDependencies": {
-        "@augment-vir/node-js": "^29.1.4",
-        "esbuild": "^0.21.5",
+        "@augment-vir/node-js": "^29.1.5",
+        "esbuild": "^0.22.0",
         "nodemon": "^3.1.4",
         "typescript": "^5.5.2",
         "vite": "^4.5.0",
