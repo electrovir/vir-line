@@ -3,9 +3,14 @@ import {Duration, DurationUnit} from 'date-vir';
 import {EmptyObject} from 'type-fest';
 import {VirLineOptions} from './options';
 
+/**
+ * Some simple checks to verify that a set of {@link VirLineStage} instances is a valid set.
+ *
+ * @category Internals
+ */
 export function assertValidStages(
     stages: ReadonlyArray<Readonly<VirLineStage<any>>>,
-    options: Readonly<Pick<VirLineOptions<any>, 'allowDuplicateStageNames'>>,
+    options: Readonly<Pick<VirLineOptions, 'allowDuplicateStageNames'>>,
 ) {
     const duplicateStageNames: string[] = [];
     const stageNameSet = new Set<string>();
@@ -27,7 +32,7 @@ export function assertValidStages(
 }
 
 /**
- * Input for stage execution.
+ * Input for a {@link VirLineStage}'s execution callback.
  *
  * @category Stage
  */
@@ -43,11 +48,21 @@ export type StageExecutorParams<State extends AnyObject> = Readonly<{
     updateStartTime: Duration<DurationUnit.Milliseconds>;
 }>;
 
+/**
+ * An object that identifies a {@link VirLineStage}.
+ *
+ * @category Internals
+ */
 export type StageId = {
     name: string;
     version?: string | number;
 };
 
+/**
+ * Convert a {@link StageId} object into a string.
+ *
+ * @category Internals
+ */
 export function stageIdToString(stageId: Readonly<StageId>): string {
     return [
         stageId.name,
@@ -67,6 +82,11 @@ export type StageExecutor<State extends AnyObject> = (
     stageParams: StageExecutorParams<State>,
 ) => MaybePromise<void>;
 
+/**
+ * An individual execution step used within a `VirLine` instance.
+ *
+ * @category Stage
+ */
 export type VirLineStage<State extends AnyObject = EmptyObject> = {
     stageId: Readonly<StageId>;
     executor: StageExecutor<State>;

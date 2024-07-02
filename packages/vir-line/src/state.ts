@@ -18,14 +18,29 @@ export type StagesToFullState<Stages extends ReadonlyArray<Readonly<VirLineStage
     Readonly<UnionToIntersection<Parameters<ArrayElement<Stages>['executor']>[0]['state']>>
 >;
 
+/**
+ * A generic state listener to avoid excessive type parameters requirements.
+ *
+ * @category Internals
+ */
 export type GenericListener = (selectedValue: any) => MaybePromise<void>;
 
+/**
+ * The object wherein state listeners are stored within a `VirLine` instance.
+ *
+ * @category Internals
+ */
 export type KeyedStateListeners = {
     selection: GenericSelectionSet;
     listeners: Set<GenericListener>;
     lastValue: any;
 };
 
+/**
+ * Data emitted by a state update rate calculation event.
+ *
+ * @category VirLine
+ */
 export type VirLineStateUpdateRate = {
     calculatedAt: Readonly<FullDate>;
     updateCount: number;

@@ -1,9 +1,13 @@
-import {AnyObject} from '@augment-vir/common';
 import {AnyDuration} from 'date-vir';
 
 export const useAnimationFrames = 'animation frames' as const;
 
-export type VirLineOptions<State extends AnyObject> = {
+/**
+ * Options supported by the `VirLine` class.
+ *
+ * @category Main
+ */
+export type VirLineOptions = {
     /** These options can only be set on initial `VirLine` construction. */
     init: {
         /**
@@ -71,7 +75,7 @@ export type VirLineOptions<State extends AnyObject> = {
     targetUpdateRate: number | undefined;
 };
 
-export const defaultVirLineOptions: VirLineOptions<any> = {
+export const defaultVirLineOptions: VirLineOptions = {
     allowDuplicateStageNames: false,
     enableLogging: false,
     targetUpdateRate: undefined,

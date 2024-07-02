@@ -1,5 +1,4 @@
 import {
-    AnyObject,
     MaybePromise,
     PickCollapsedSelection,
     SelectionSet,
@@ -29,8 +28,12 @@ import {VirLineOptions, defaultVirLineOptions, useAnimationFrames} from './optio
 import {StageExecutorParams, VirLineStage, assertValidStages, stageIdToString} from './stage';
 import {GenericListener, KeyedStateListeners, StagesToFullState} from './state';
 
-export type VirLineWithState<State extends AnyObject> = VirLine<[VirLineStage<State>]>;
-
+/**
+ * The primary entry point for this package. This class enables runs all stages passed to it on each
+ * state update iteration and fires all the attached listeners.
+ *
+ * @category Main
+ */
 export class VirLine<
     const Stages extends ReadonlyArray<Readonly<VirLineStage<any>>>,
 > extends ListenTarget<VirLineEvents<Stages>> {
@@ -41,7 +44,7 @@ export class VirLine<
      *
      * @default defaultVirLineOptions
      */
-    public readonly options: VirLineOptions<StagesToFullState<Stages>> = defaultVirLineOptions;
+    public readonly options: VirLineOptions = defaultVirLineOptions;
     /**
      * If `true`, the update loop is paused. If `false`, the update loop is automatically executing.
      *
@@ -56,7 +59,7 @@ export class VirLine<
      *
      * @default initialState
      */
-    public readonly currentState: StagesToFullState<Stages>;
+    public currentState: StagesToFullState<Stages>;
 
     /**
      * A type-only accessor. This would be the same thing as `typeof currentState` but is a little
@@ -101,7 +104,7 @@ export class VirLine<
          * The stages which this {@link VirLine} instance will execute on each state update. These
          * stages will also determine the overall State type for this instance.
          */
-        public stages: Readonly<Stages>,
+        public readonly stages: Readonly<Stages>,
         /**
          * The initial state for this {@link VirLine} instance.
          *
@@ -114,7 +117,7 @@ export class VirLine<
          *
          * @default defaultVirLineOptions
          */
-        initOptions?: Readonly<PartialDeep<NoInfer<VirLineOptions<StagesToFullState<Stages>>>>>,
+        initOptions?: Readonly<PartialDeep<NoInfer<VirLineOptions>>>,
     ) {
         super();
 
@@ -134,9 +137,7 @@ export class VirLine<
      * Modifies the current options. All provided options are deeply merged with the existing
      * options, so you only need to provide the options which you wish to modify.
      */
-    public updateOptions(
-        newOptions: Readonly<Omit<PartialDeep<VirLineOptions<typeof this.stateType>>, 'init'>>,
-    ): void {
+    public updateOptions(newOptions: Readonly<Omit<PartialDeep<VirLineOptions>, 'init'>>): void {
         makeWritable(this).options = mergeDeep<typeof this.options>(this.options, newOptions);
     }
 
@@ -230,7 +231,7 @@ export class VirLine<
     }
 
     /** Remove all current state listeners. */
-    public removeAllStateListeners() {
+    public removeAllStateListeners(): void {
         this.stateListeners = [];
     }
 

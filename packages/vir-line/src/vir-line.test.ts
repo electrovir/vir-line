@@ -23,7 +23,7 @@ describe(VirLine.name, () => {
         args: [
             Readonly<Stages>,
             NoInfer<StagesToFullState<Stages>>,
-            Readonly<PartialDeep<NoInfer<VirLineOptions<StagesToFullState<Stages>>>>>?,
+            Readonly<PartialDeep<NoInfer<VirLineOptions>>>?,
         ],
         callback: (args: {virLine: VirLine<Stages>}) => MaybePromise<void>,
     ) {

@@ -7,6 +7,8 @@ import {StagesToFullState, VirLineStateUpdateRate} from './state';
  * A union of all possible events that a `VirLine` instance can emit. This does not include state
  * update events, as the type of state update events vary depending on what part of the state was
  * listened to.
+ *
+ * @category Events
  */
 export type VirLineEvents<Stages extends ReadonlyArray<Readonly<VirLineStage<any>>>> =
     | VirLineDestroyEvent
