@@ -1,3 +1,4 @@
+import {assertTypeOf} from 'run-time-assertions';
 import {VirLine} from './vir-line';
 import {VirLineWithState} from './vir-line-with-state';
 
@@ -73,5 +74,26 @@ describe('VirLineWithState', () => {
 
         // @ts-expect-error: intentional type mismatch for testing purposes
         requiresBaseState(virLine);
+    });
+
+    it('has proper listenToState types', () => {
+        const exampleVirLine = {listenToState() {}} as any as VirLineWithState<{
+            a: {
+                f: {
+                    h: string;
+                };
+                g: number;
+            };
+            b: {
+                d: {
+                    e: string;
+                };
+            };
+            c: {};
+        }>;
+
+        exampleVirLine.listenToState(false, {b: {d: true}}, (value) => {
+            assertTypeOf(value).toEqualTypeOf<{e: string}>();
+        });
     });
 });
