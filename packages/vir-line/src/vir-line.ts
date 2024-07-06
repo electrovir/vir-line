@@ -338,7 +338,7 @@ export class VirLine<
                 stateListener.selection,
             );
             if (!isDeepEqual(newValue, stateListener.lastValue)) {
-                stateListener.lastValue = newValue;
+                stateListener.lastValue = cloneDeep(newValue);
                 stateListener.listeners.forEach((listener) => {
                     listenerPromises.push(callAsynchronously(async () => await listener(newValue)));
                 });
