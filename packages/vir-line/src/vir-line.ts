@@ -14,7 +14,6 @@ import {Duration, DurationUnit, convertDuration, createFullDate, userTimezone} f
 import {isJsonEqual} from 'run-time-assertions';
 import {PartialDeep} from 'type-fest';
 import {ListenTarget, RemoveListenerCallback} from 'typed-event-target';
-import {isDeepEqual} from './deep-equal';
 import {
     VirLineDestroyEvent,
     VirLineErrorEvent,
@@ -27,6 +26,8 @@ import {
 import {VirLineOptions, defaultVirLineOptions, useAnimationFrames} from './options';
 import {StageExecutorParams, VirLineStage, assertValidStages, stageIdToString} from './stage';
 import {GenericListener, KeyedStateListeners, StagesToFullState} from './state';
+import {cloneDeep} from './third-party/clone-deep';
+import {isDeepEqual} from './third-party/deep-equal';
 
 /**
  * The primary entry point for this package. This class enables runs all stages passed to it on each
@@ -216,7 +217,7 @@ export class VirLine<
         } else {
             this.stateListeners.push({
                 selection,
-                lastValue: currentValue,
+                lastValue: cloneDeep(currentValue),
                 listeners: new Set([listener]),
             });
         }

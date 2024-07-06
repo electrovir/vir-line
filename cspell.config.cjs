@@ -7,7 +7,12 @@ module.exports = {
     ],
     words: [
         ...baseConfig.words,
+        'arrayiterator',
         'Evgeny',
+        'mapiterator',
         'Poberezkin',
+        'Schlinkert',
+        'setiterator',
+        'stringiterator',
     ],
 };

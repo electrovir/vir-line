@@ -16,6 +16,7 @@ import {
 import {VirLineOptions} from './options';
 import {VirLineStage} from './stage';
 import {StagesToFullState} from './state';
+import {cloneDeep} from './third-party/clone-deep';
 import {VirLine} from './vir-line';
 
 describe(VirLine.name, () => {
@@ -240,6 +241,61 @@ describe(VirLine.name, () => {
                 });
 
                 assert.strictEqual(updatedValue, 'finished');
+            },
+        ),
+    );
+
+    it(
+        'state listeners work even across mutations',
+        withVirLine(
+            [
+                [
+                    {
+                        executor({}: {state: {value: {nested: string}}}) {},
+                        stageId: {
+                            name: 'nothing',
+                        },
+                    },
+                ],
+                {
+                    value: {nested: 'started'},
+                },
+            ],
+            async ({virLine}) => {
+                let updatedValue: {nested: string} | undefined;
+
+                virLine.listenToState(
+                    true,
+                    {
+                        value: true,
+                    },
+                    (newNested) => {
+                        updatedValue = cloneDeep(newNested);
+                    },
+                );
+                await virLine.triggerUpdate();
+
+                assert.deepStrictEqual(
+                    updatedValue,
+                    {nested: 'started'},
+                    'state should not have updated yet',
+                );
+
+                virLine.currentState.value.nested = 'yo';
+
+                assert.deepStrictEqual(
+                    updatedValue,
+                    {nested: 'started'},
+                    'state should not have updated yet',
+                );
+
+                await virLine.triggerUpdate();
+
+                assert.deepStrictEqual(
+                    updatedValue,
+                    {nested: 'yo'},
+                    'state should not have updated yet',
+                );
             },
         ),
     );
