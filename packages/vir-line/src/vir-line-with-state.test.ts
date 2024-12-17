@@ -1,6 +1,7 @@
-import {assertTypeOf} from 'run-time-assertions';
-import {VirLine} from './vir-line';
-import {VirLineWithState} from './vir-line-with-state';
+import {assert} from '@augment-vir/assert';
+import {describe, it} from '@augment-vir/test';
+import {VirLineWithState} from './vir-line-with-state.js';
+import {VirLine} from './vir-line.js';
 
 describe('VirLineWithState', () => {
     it('is compatible with more complex VirLine instances', () => {
@@ -89,11 +90,12 @@ describe('VirLineWithState', () => {
                     e: string;
                 };
             };
+            // eslint-disable-next-line @typescript-eslint/no-empty-object-type
             c: {};
         }>;
 
         exampleVirLine.listenToState(false, {b: {d: true}}, (value) => {
-            assertTypeOf(value).toEqualTypeOf<{e: string}>();
+            assert.tsType(value).equals<{e: string}>();
         });
     });
 });

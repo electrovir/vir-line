@@ -1,10 +1,10 @@
 import {ensureError, extractErrorMessage} from '@augment-vir/common';
 import {css, defineElementNoInputs, html, listen, perInstance} from 'element-vir';
 import {RemoveListenerCallback, VirLinePauseEvent, VirLineUpdateRateEvent} from 'vir-line';
-import {DemoShapeTypeEnum} from '../../demo-vir-line/demo-stages';
-import {createDemoPipeline} from '../../demo-vir-line/demo-vir-line';
-import {VirCanvas} from './vir-canvas.element';
-import {VirControls} from './vir-controls.element';
+import {DemoShapeTypeEnum} from '../../demo-vir-line/demo-stages.js';
+import {createDemoPipeline} from '../../demo-vir-line/demo-vir-line.js';
+import {VirCanvas} from './vir-canvas.element.js';
+import {VirControls} from './vir-controls.element.js';
 
 export const VirLineDemo = defineElementNoInputs({
     tagName: 'vir-line-demo',
@@ -41,7 +41,7 @@ export const VirLineDemo = defineElementNoInputs({
         error: undefined as Error | undefined,
         framerate: 0,
     },
-    initCallback({state, updateState}) {
+    init({state, updateState}) {
         updateState({
             pipelineListenerRemovers: [
                 state.pipeline.listen(VirLinePauseEvent, (event) => {
@@ -57,10 +57,10 @@ export const VirLineDemo = defineElementNoInputs({
             ],
         });
     },
-    cleanupCallback({state}) {
+    cleanup({state}) {
         state.pipelineListenerRemovers.forEach((remover) => remover());
     },
-    renderCallback({state, updateState}) {
+    render({state, updateState}) {
         if (state.error) {
             return html`
                 <p class="error">${extractErrorMessage(state.error)}</p>

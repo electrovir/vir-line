@@ -5,30 +5,33 @@ import {
     UnionToIntersection,
 } from '@augment-vir/common';
 import {Duration, DurationUnit, FullDate} from 'date-vir';
-import {Writable} from 'type-fest';
-import {VirLineStage} from './stage';
+import type {EmptyObject, IsNever} from 'type-fest';
+import {VirLineStage} from './stage.js';
 
 /**
  * Type helper that extracts the require `State` from each given {@link VirLineStage} and then
  * combines them together into a single `State` type.
  *
- * @category Internals
+ * @category Internal
  */
-export type StagesToFullState<Stages extends ReadonlyArray<Readonly<VirLineStage<any>>>> = Writable<
-    Readonly<UnionToIntersection<Parameters<ArrayElement<Stages>['executor']>[0]['state']>>
->;
+export type StagesToFullState<Stages extends ReadonlyArray<Readonly<VirLineStage<any>>>> =
+    IsNever<
+        UnionToIntersection<Parameters<ArrayElement<Stages>['executor']>[0]['state']>
+    > extends true
+        ? EmptyObject
+        : UnionToIntersection<Parameters<ArrayElement<Stages>['executor']>[0]['state']>;
 
 /**
  * A generic state listener to avoid excessive type parameters requirements.
  *
- * @category Internals
+ * @category Internal
  */
 export type GenericListener = (selectedValue: any) => MaybePromise<void>;
 
 /**
  * The object wherein state listeners are stored within a `VirLine` instance.
  *
- * @category Internals
+ * @category Internal
  */
 export type KeyedStateListeners = {
     selection: GenericSelectionSet;

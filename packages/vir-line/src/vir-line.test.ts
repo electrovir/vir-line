@@ -1,37 +1,30 @@
-import {
-    createDeferredPromiseWrapper,
-    MaybePromise,
-    wait,
-    waitUntilTruthy,
-} from '@augment-vir/common';
-import {assert} from '@open-wc/testing';
-import {assertThrows} from 'run-time-assertions';
-import {PartialDeep} from 'type-fest';
+import {assert, waitUntil} from '@augment-vir/assert';
+import {DeferredPromise, wait, type AnyObject, type MaybePromise} from '@augment-vir/common';
+import {describe, it} from '@augment-vir/test';
+import {type PartialDeep} from 'type-fest';
 import {
     VirLineDestroyEvent,
     VirLineErrorEvent,
     VirLineUpdateRateEvent,
     VirLineUpdateSkippedEvent,
-} from './events';
-import {VirLineOptions} from './options';
-import {VirLineStage} from './stage';
-import {StagesToFullState} from './state';
-import {cloneDeep} from './third-party/clone-deep';
-import {VirLine} from './vir-line';
+} from './events.js';
+import type {VirLineOptions} from './options.js';
+import {VirLineStage} from './stage.js';
+import {StagesToFullState} from './state.js';
+import {cloneDeep} from './third-party/clone-deep.js';
+import {VirLine} from './vir-line.js';
 
 describe(VirLine.name, () => {
     function withVirLine<const Stages extends ReadonlyArray<Readonly<VirLineStage<any>>>>(
-        args: [
-            Readonly<Stages>,
-            NoInfer<StagesToFullState<Stages>>,
-            Readonly<PartialDeep<NoInfer<VirLineOptions>>>?,
-        ],
-        callback: (args: {virLine: VirLine<Stages>}) => MaybePromise<void>,
+        stages: Readonly<Stages>,
+        startState: StagesToFullState<NoInfer<Stages>>,
+        callback: (args: {virLine: VirLine<NoInfer<Stages>>}) => MaybePromise<void>,
+        options?: Readonly<PartialDeep<VirLineOptions>>,
     ) {
         return async () => {
-            const virLine = new VirLine(...args);
+            const virLine = new VirLine(stages as any, startState, options);
 
-            await callback({virLine});
+            await callback({virLine} as any);
 
             virLine.destroy();
         };
@@ -41,36 +34,33 @@ describe(VirLine.name, () => {
         'runs automatically and stops when destroyed',
         withVirLine(
             [
-                [
+                new VirLineStage<{count: number}>(
                     {
-                        executor({state}: {state: {count: number}}) {
-                            state.count++;
-                        },
-
-                        stageId: {
-                            name: 'incrementor',
-                        },
+                        name: 'incrementor',
                     },
-                ],
-                {
-                    count: 0,
-                },
-                {
-                    updateLoopInterval: {milliseconds: 1},
-                    init: {
-                        startUpdateLoopImmediately: true,
+                    ({state}) => {
+                        state.count++;
                     },
-                },
+                ),
             ],
+            {
+                count: 0,
+            },
             async ({virLine}) => {
-                await waitUntilTruthy(() => virLine.currentState.count > 5);
+                await waitUntil.isTruthy(() => virLine.currentState.count > 5);
 
                 virLine.destroy();
                 const countAtDestruction = virLine.currentState.count;
 
-                await wait(2000);
+                await wait({seconds: 2});
 
-                assert.strictEqual(countAtDestruction, virLine.currentState.count);
+                assert.strictEquals(countAtDestruction, virLine.currentState.count);
+            },
+            {
+                updateLoopInterval: {milliseconds: 1},
+                init: {
+                    startUpdateLoopImmediately: true,
+                },
             },
         ),
     );
@@ -79,25 +69,22 @@ describe(VirLine.name, () => {
         'runs with default update interval',
         withVirLine(
             [
-                [
+                new VirLineStage<{count: number}>(
                     {
-                        executor({state}: {state: {count: number}}) {
-                            state.count++;
-                        },
-
-                        stageId: {
-                            name: 'incrementor',
-                        },
+                        name: 'incrementor',
                     },
-                ],
-                {
-                    count: 0,
-                },
+                    ({state}) => {
+                        state.count++;
+                    },
+                ),
             ],
+            {
+                count: 0,
+            },
             async ({virLine}) => {
                 virLine.startUpdateLoop();
 
-                await waitUntilTruthy(() => virLine.currentState.count > 5);
+                await waitUntil.isTruthy(() => virLine.currentState.count > 5);
 
                 virLine.destroy();
             },
@@ -107,14 +94,8 @@ describe(VirLine.name, () => {
     it(
         'calculates update rate',
         withVirLine(
-            [
-                [],
-                {},
-                {
-                    updateLoopInterval: {milliseconds: 1},
-                    minUpdateRateCalculationInterval: {milliseconds: 1},
-                },
-            ],
+            [],
+            {},
             async ({virLine}) => {
                 let updatesPerSecond = 0;
 
@@ -123,7 +104,11 @@ describe(VirLine.name, () => {
                 });
                 virLine.startUpdateLoop();
 
-                await waitUntilTruthy(() => updatesPerSecond > 0);
+                await waitUntil.isTruthy(() => updatesPerSecond > 0);
+            },
+            {
+                updateLoopInterval: {milliseconds: 1},
+                minUpdateRateCalculationInterval: {milliseconds: 1},
             },
         ),
     );
@@ -131,14 +116,8 @@ describe(VirLine.name, () => {
     it(
         'does not calculate update rate if disabled',
         withVirLine(
-            [
-                [],
-                {},
-                {
-                    updateLoopInterval: {milliseconds: 1},
-                    minUpdateRateCalculationInterval: undefined,
-                },
-            ],
+            [],
+            {},
             async ({virLine}) => {
                 let updatesPerSecond = 0;
 
@@ -147,10 +126,14 @@ describe(VirLine.name, () => {
                 });
                 virLine.startUpdateLoop();
 
-                await wait(2000);
+                await wait({seconds: 2});
 
                 virLine.destroy();
-                assert.strictEqual(updatesPerSecond, 0);
+                assert.strictEquals(updatesPerSecond, 0);
+            },
+            {
+                updateLoopInterval: {milliseconds: 1},
+                minUpdateRateCalculationInterval: undefined,
             },
         ),
     );
@@ -159,18 +142,16 @@ describe(VirLine.name, () => {
         'emits an error event if a stage errors',
         withVirLine(
             [
-                [
+                new VirLineStage(
                     {
-                        executor() {
-                            throw new Error('FAIL');
-                        },
-                        stageId: {
-                            name: 'intentional failure',
-                        },
+                        name: 'intentional failure',
                     },
-                ],
-                {},
+                    () => {
+                        throw new Error('FAIL');
+                    },
+                ),
             ],
+            {},
             async ({virLine}) => {
                 let error: Error | undefined;
 
@@ -179,9 +160,9 @@ describe(VirLine.name, () => {
                 });
                 await virLine.triggerUpdate();
 
-                await waitUntilTruthy(() => error);
+                await waitUntil.isTruthy(() => error);
 
-                assert.strictEqual(error?.message, "Stage 'intentional failure' failed: FAIL");
+                assert.strictEquals(error?.message, "Stage 'intentional failure' failed: FAIL");
             },
         ),
     );
@@ -190,26 +171,24 @@ describe(VirLine.name, () => {
         'supports state listeners',
         withVirLine(
             [
-                [
+                new VirLineStage<{value: {nested: string}; count: number}>(
                     {
-                        executor({state}: {state: {value: {nested: string}; count: number}}) {
-                            state.count++;
-                            if (state.count > 10) {
-                                state.value.nested = 'finished';
-                            } else if (state.count > 20) {
-                                state.value.nested = 'over finished';
-                            }
-                        },
-                        stageId: {
-                            name: 'count then update',
-                        },
+                        name: 'count then update',
                     },
-                ],
-                {
-                    value: {nested: 'started'},
-                    count: 0,
-                },
+                    ({state}) => {
+                        state.count++;
+                        if (state.count > 10) {
+                            state.value.nested = 'finished';
+                        } else if (state.count > 20) {
+                            state.value.nested = 'over finished';
+                        }
+                    },
+                ),
             ],
+            {
+                value: {nested: 'started'},
+                count: 0,
+            },
             async ({virLine}) => {
                 let updatedValue = '';
 
@@ -225,22 +204,22 @@ describe(VirLine.name, () => {
                     },
                 );
 
-                await waitUntilTruthy(async () => {
+                await waitUntil.isTruthy(async () => {
                     await virLine.triggerUpdate();
                     return updatedValue;
                 });
-                assert.strictEqual(updatedValue, 'finished');
+                assert.strictEquals(updatedValue, 'finished');
 
                 assert.isTrue(unListen());
                 assert.isFalse(unListen());
 
-                await waitUntilTruthy(async () => {
+                await waitUntil.isTruthy(async () => {
                     await virLine.triggerUpdate();
 
                     return virLine.currentState.count > 25;
                 });
 
-                assert.strictEqual(updatedValue, 'finished');
+                assert.strictEquals(updatedValue, 'finished');
             },
         ),
     );
@@ -249,18 +228,16 @@ describe(VirLine.name, () => {
         'state listeners work even across mutations',
         withVirLine(
             [
-                [
+                new VirLineStage<{value: {nested: string}}>(
                     {
-                        executor({}: {state: {value: {nested: string}}}) {},
-                        stageId: {
-                            name: 'nothing',
-                        },
+                        name: 'nothing',
                     },
-                ],
-                {
-                    value: {nested: 'started'},
-                },
+                    ({state}) => {},
+                ),
             ],
+            {
+                value: {nested: 'started'},
+            },
             async ({virLine}) => {
                 let updatedValue: {nested: string} | undefined;
 
@@ -275,24 +252,24 @@ describe(VirLine.name, () => {
                 );
                 await virLine.triggerUpdate();
 
-                assert.deepStrictEqual(
-                    updatedValue,
+                assert.deepEquals(
+                    updatedValue as AnyObject,
                     {nested: 'started'},
                     'state should not have updated yet',
                 );
 
                 virLine.currentState.value.nested = 'yo';
 
-                assert.deepStrictEqual(
-                    updatedValue,
+                assert.deepEquals(
+                    updatedValue as AnyObject,
                     {nested: 'started'},
                     'state should not have updated yet',
                 );
 
                 await virLine.triggerUpdate();
 
-                assert.deepStrictEqual(
-                    updatedValue,
+                assert.deepEquals(
+                    updatedValue as AnyObject,
                     {nested: 'yo'},
                     'state should not have updated yet',
                 );
@@ -304,17 +281,17 @@ describe(VirLine.name, () => {
         "fails to remove a state listener that doesn't exist",
         withVirLine(
             [
-                [
+                new VirLineStage<{hi: 'five'}>(
                     {
-                        executor({state}: {state: {hi: 'five'}}) {},
-                        stageId: {name: 'does nothing'},
+                        name: 'does nothing',
                     },
-                ],
-                {
-                    hi: 'five',
-                },
+                    ({state}) => {},
+                ),
             ],
-            async ({virLine}) => {
+            {
+                hi: 'five',
+            },
+            ({virLine}) => {
                 virLine.listenToState(false, {hi: false}, () => {});
 
                 assert.isFalse(virLine.removeStateListener({hi: true}, () => {}));
@@ -325,52 +302,40 @@ describe(VirLine.name, () => {
 
     it(
         "can't start or pause twice",
-        withVirLine(
-            [
-                [],
-                {},
-            ],
-            async ({virLine}) => {
-                assert.isTrue(virLine.startUpdateLoop());
-                assert.isFalse(virLine.startUpdateLoop());
+        withVirLine([], {}, ({virLine}) => {
+            assert.isTrue(virLine.startUpdateLoop());
+            assert.isFalse(virLine.startUpdateLoop());
 
-                assert.isTrue(virLine.pauseUpdateLoop());
-                assert.isFalse(virLine.pauseUpdateLoop());
-            },
-        ),
+            assert.isTrue(virLine.pauseUpdateLoop());
+            assert.isFalse(virLine.pauseUpdateLoop());
+        }),
     );
 
     it(
         'rejects accessing stateType',
-        withVirLine(
-            [
-                [],
-                {},
-            ],
-            async ({virLine}) => {
-                assertThrows(() => virLine.stateType, {
-                    matchMessage: "Access to 'stateType' is only allowed as a type.",
-                });
-            },
-        ),
+        withVirLine([], {}, ({virLine}) => {
+            assert.throws(() => virLine.stateType, {
+                matchMessage: "Access to 'stateType' is only allowed as a type.",
+            });
+        }),
     );
 
     it(
         'can attach two listeners to the same state selection',
         withVirLine(
             [
-                [
+                new VirLineStage<{hi: string}>(
                     {
-                        executor({state}: {state: {hi: string}}) {
-                            state.hi = 'four';
-                        },
-                        stageId: {name: 'does nothing'},
+                        name: 'does nothing',
                     },
-                ],
-                {
-                    hi: 'five',
-                },
+                    ({state}) => {
+                        state.hi = 'four';
+                    },
+                ),
             ],
+            {
+                hi: 'five',
+            },
             async ({virLine}) => {
                 const values: string[] = [];
 
@@ -389,7 +354,7 @@ describe(VirLine.name, () => {
 
                 await virLine.triggerUpdate();
 
-                assert.deepStrictEqual(values, [
+                assert.deepEquals(values, [
                     'five',
                     'five',
                     'four',
@@ -402,52 +367,49 @@ describe(VirLine.name, () => {
         'can fire a state listener immediately',
         withVirLine(
             [
-                [
-                    {
-                        executor({
-                            state,
-                        }: {
-                            state: {
-                                a: {
-                                    f: {
-                                        h: string;
-                                    };
-                                    g: number;
-                                };
-                                b: {
-                                    d: {
-                                        e: string;
-                                    };
-                                };
-                                c: {};
-                            };
-                        }) {},
-                        stageId: {name: 'does nothing'},
-                    },
-                ],
-                {
+                new VirLineStage<{
                     a: {
                         f: {
-                            h: 'h',
-                        },
-                        g: 123,
-                    },
+                            h: string;
+                        };
+                        g: number;
+                    };
                     b: {
                         d: {
-                            e: 'e',
-                        },
+                            e: string;
+                        };
+                    };
+                    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+                    c: {};
+                }>(
+                    {
+                        name: 'does nothing',
                     },
-                    c: {},
-                },
+                    ({state}) => {},
+                ),
             ],
-            async ({virLine}) => {
+            {
+                a: {
+                    f: {
+                        h: 'h',
+                    },
+                    g: 123,
+                },
+                b: {
+                    d: {
+                        e: 'e',
+                    },
+                },
+                c: {},
+            },
+            ({virLine}) => {
                 let value: unknown;
 
                 virLine.listenToState(true, {a: {g: true}}, (newValue) => {
                     value = newValue;
                 });
 
-                assert.strictEqual(value, 123);
+                assert.strictEquals(value, 123);
             },
         ),
     );
@@ -455,34 +417,32 @@ describe(VirLine.name, () => {
     it(
         'supports enabled logging',
         withVirLine(
-            [
-                [],
-                {},
-                {
-                    enableLogging: true,
-                },
-            ],
-            async ({virLine}) => {
-                virLine.triggerUpdate();
+            [],
+            {},
+            ({virLine}) => {
+                void virLine.triggerUpdate();
                 virLine.destroy();
+            },
+            {
+                enableLogging: true,
             },
         ),
     );
 
     it('skips updates if one is in progress', async () => {
-        const deferredPromise = createDeferredPromiseWrapper<void>();
+        const deferredPromise = new DeferredPromise();
 
         const virLine = new VirLine(
             [
-                {
-                    async executor({state}: {state: {count: number}}) {
+                new VirLineStage<{count: number}>(
+                    {
+                        name: 'delayed',
+                    },
+                    async ({state}) => {
                         state.count++;
                         await deferredPromise.promise;
                     },
-                    stageId: {
-                        name: 'delayed',
-                    },
-                },
+                ),
             ],
             {
                 count: 0,
@@ -505,11 +465,11 @@ describe(VirLine.name, () => {
         await firstUpdate;
         await virLine.triggerUpdate();
 
-        assert.strictEqual(virLine.currentState.count, 2);
-        assert.strictEqual(skippedCount, 2);
+        assert.strictEquals(virLine.currentState.count, 2);
+        assert.strictEquals(skippedCount, 2);
     });
 
-    it('emits a destroy event', async () => {
+    it('emits a destroy event', () => {
         let destroyEmitted = false;
 
         const virLine = new VirLine([], {});
@@ -527,41 +487,41 @@ describe(VirLine.name, () => {
         'never collapses selected state object',
         withVirLine(
             [
-                [
+                new VirLineStage<{
+                    count: number;
+                    entries: Record<string, Record<string, number>>;
+                }>(
                     {
-                        stageId: {
-                            name: 'object mutator',
-                        },
-                        executor({
-                            state,
-                        }: {
-                            state: {count: number; entries: Record<string, Record<string, number>>};
-                        }) {
-                            state.count++;
-                            if (state.count % 2) {
-                                state.entries = {
-                                    one: {
-                                        child: 1,
-                                        child2: 2,
-                                    },
-                                    two: {
-                                        child: 1,
-                                        child2: 2,
-                                    },
-                                };
-                            } else {
-                                state.entries = {
-                                    one: {
-                                        child: 1,
-                                        child2: 2,
-                                    },
-                                };
-                            }
-                        },
+                        name: 'object mutator',
                     },
-                ],
-                {count: 0, entries: {}},
+                    ({state}) => {
+                        state.count++;
+                        if (state.count % 2) {
+                            state.entries = {
+                                one: {
+                                    child: 1,
+                                    child2: 2,
+                                },
+                                two: {
+                                    child: 1,
+                                    child2: 2,
+                                },
+                            };
+                        } else {
+                            state.entries = {
+                                one: {
+                                    child: 1,
+                                    child2: 2,
+                                },
+                            };
+                        }
+                    },
+                ),
             ],
+            {
+                count: 0,
+                entries: {},
+            },
             async ({virLine}) => {
                 const dataReceived: Record<string, Record<string, number>>[] = [];
 
@@ -574,7 +534,7 @@ describe(VirLine.name, () => {
                 await virLine.triggerUpdate();
                 await virLine.triggerUpdate();
 
-                assert.deepStrictEqual(dataReceived, [
+                assert.deepEquals(dataReceived, [
                     {},
                     {
                         one: {
@@ -613,49 +573,28 @@ describe(VirLine.name, () => {
         ),
     );
 
-    it('fails on duplicate stage names', async () => {
-        assertThrows(
+    it('fails on duplicate stage names', () => {
+        assert.throws(
             () =>
                 new VirLine(
                     [
-                        {
-                            executor() {},
-                            stageId: {
+                        new VirLineStage(
+                            {
                                 name: 'duplicate',
                             },
-                        },
-                        {
-                            executor() {},
-                            stageId: {
+                            () => {},
+                        ),
+                        new VirLineStage(
+                            {
                                 name: 'duplicate',
                             },
-                        },
+                            () => {},
+                        ),
                     ],
                     {},
                 ),
-            {matchMessage: 'Duplicate stage names provided to VirLine: duplicate'},
-        );
-    });
-
-    it('can allow duplicate stage names', async () => {
-        new VirLine(
-            [
-                {
-                    executor() {},
-                    stageId: {
-                        name: 'duplicate',
-                    },
-                },
-                {
-                    executor() {},
-                    stageId: {
-                        name: 'duplicate',
-                    },
-                },
-            ],
-            {},
             {
-                allowDuplicateStageNames: true,
+                matchMessage: 'Duplicate stage names provided to VirLine: duplicate',
             },
         );
     });

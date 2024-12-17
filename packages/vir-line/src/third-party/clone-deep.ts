@@ -1,10 +1,10 @@
 /** Since this is external code, I don't care about testing code coverage on it. */
 /* c8 ignore start */
 
+import {check} from '@augment-vir/assert';
 import {AnyFunction} from '@augment-vir/common';
-import {isPlainObject} from 'is-plain-object';
-import {cloneShallow} from './clone-shallow';
-import {kindOf} from './kind-of';
+import {cloneShallow} from './clone-shallow.js';
+import {kindOf} from './kind-of.js';
 
 /**
  * Deeply copy a variable.
@@ -51,9 +51,10 @@ function cloneObjectDeep(value: any, instanceClone?: AnyFunction) {
     if (typeof instanceClone === 'function') {
         return instanceClone(value);
     }
-    if (instanceClone || isPlainObject(value)) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (instanceClone || check.isObject(value)) {
         const res = new value.constructor();
-        for (let key in value) {
+        for (const key in value) {
             res[key] = cloneDeep(value[key], instanceClone);
         }
         return res;
@@ -63,8 +64,11 @@ function cloneObjectDeep(value: any, instanceClone?: AnyFunction) {
 
 function cloneArrayDeep(value: any, instanceClone?: AnyFunction) {
     const res = new value.constructor(value.length);
-    for (let i = 0; i < value.length; i++) {
-        res[i] = cloneDeep(value[i], instanceClone);
+    for (const [
+        i,
+        element,
+    ] of value.entries()) {
+        res[i] = cloneDeep(element, instanceClone);
     }
     return res;
 }

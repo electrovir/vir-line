@@ -1,3 +1,4 @@
+import {check} from '@augment-vir/assert';
 import {
     MaybePromise,
     PickCollapsedSelection,
@@ -11,7 +12,6 @@ import {
     wrapString,
 } from '@augment-vir/common';
 import {Duration, DurationUnit, convertDuration, createFullDate, userTimezone} from 'date-vir';
-import {isJsonEqual} from 'run-time-assertions';
 import {PartialDeep} from 'type-fest';
 import {ListenTarget, RemoveListenerCallback} from 'typed-event-target';
 import {
@@ -22,26 +22,25 @@ import {
     VirLineStateUpdateEvent,
     VirLineUpdateRateEvent,
     VirLineUpdateSkippedEvent,
-} from './events';
-import {VirLineOptions, defaultVirLineOptions, useAnimationFrames} from './options';
-import {StageExecutorParams, VirLineStage, assertValidStages, stageIdToString} from './stage';
-import {GenericListener, KeyedStateListeners, StagesToFullState} from './state';
-import {cloneDeep} from './third-party/clone-deep';
-import {isDeepEqual} from './third-party/deep-equal';
+} from './events.js';
+import {VirLineOptions, defaultVirLineOptions, useAnimationFrames} from './options.js';
+import {StageExecutorParams, VirLineStage, assertValidStages, stageIdToString} from './stage.js';
+import {GenericListener, KeyedStateListeners, StagesToFullState} from './state.js';
+import {cloneDeep} from './third-party/clone-deep.js';
 
 /**
  * The primary entry point for this package. This class enables runs all stages passed to it on each
  * state update iteration and fires all the attached listeners.
  *
- * @category Main
+ * @category VirLine
  */
 export class VirLine<
     const Stages extends ReadonlyArray<Readonly<VirLineStage<any>>>,
 > extends ListenTarget<VirLineEvents<Stages>> {
     /**
      * All current {@link VirLineOptions} saved to this {@link VirLine} instance. This is externally
-     * readonly. To update it, use {@link updateOptions}. This can also be set on construction via
-     * the `initOptions` construction argument.
+     * readonly. To update it, use {@link VirLine['updateOptions']}. This can also be set on
+     * construction via the `initOptions` construction argument.
      *
      * @default defaultVirLineOptions
      */
@@ -56,7 +55,7 @@ export class VirLine<
      * The current state. This initializes to a copy of the `initialState` constructor argument and
      * will be mutated by each state update.
      *
-     * To listen to changes on the state, use {@link listenToState}.
+     * To listen to changes on the state, use {@link VirLine['listenToState']}.
      *
      * @default initialState
      */
@@ -96,7 +95,8 @@ export class VirLine<
 
     /**
      * All current fine-grained state listeners. Add state listeners to this list with
-     * {@link listenToState} and remove listeners with {@link removeStateListener}.
+     * {@link VirLine['listenToState']} and remove listeners with
+     * {@link VirLine['removeStateListener']}.
      */
     private stateListeners: KeyedStateListeners[] = [];
 
@@ -109,16 +109,16 @@ export class VirLine<
         /**
          * The initial state for this {@link VirLine} instance.
          *
-         * **WARNING**: this _will_ get mutated.
+         * **WARNING**: the contents of this object _will_ get mutated.
          */
-        initialState: NoInfer<StagesToFullState<Stages>>,
+        initialState: StagesToFullState<NoInfer<Stages>>,
         /**
          * All options for this {@link VirLine} instance. This can also be updated after construction
-         * via {@link updateOptions}.
+         * via {@link VirLine['updateOptions']}.
          *
          * @default defaultVirLineOptions
          */
-        initOptions?: Readonly<PartialDeep<NoInfer<VirLineOptions>>>,
+        initOptions?: Readonly<PartialDeep<VirLineOptions>>,
     ) {
         super();
 
@@ -127,7 +127,7 @@ export class VirLine<
             this.updateOptions(initOptions);
         }
 
-        assertValidStages(stages, this.options);
+        assertValidStages(stages);
 
         if (this.options.init.startUpdateLoopImmediately) {
             this.startUpdateLoop();
@@ -182,7 +182,10 @@ export class VirLine<
         }
     }
 
-    /** Clean up all state and call the `onDestroy` callback (set in {@link options}). */
+    /**
+     * Clean up all state and call the `onDestroy` callback (set in the options constructor
+     * parameter).
+     */
     public override destroy() {
         this.pauseUpdateLoop();
         this.removeAllStateListeners();
@@ -200,11 +203,12 @@ export class VirLine<
         fireImmediately: boolean,
         selection: Selection,
         listener: (
+            this: void,
             selection: PickCollapsedSelection<typeof this.stateType, Selection>,
         ) => MaybePromise<void>,
     ): RemoveListenerCallback {
         const existingKeyedStateListeners = this.stateListeners.find((stateListeners) =>
-            isJsonEqual(stateListeners.selection as any, selection as any),
+            check.jsonEquals(stateListeners.selection as any, selection as any),
         );
 
         const currentValue = selectCollapsedFrom<typeof this.stateType, Selection>(
@@ -223,7 +227,7 @@ export class VirLine<
         }
 
         if (fireImmediately) {
-            listener(currentValue);
+            void listener(currentValue);
         }
 
         return () => {
@@ -246,7 +250,7 @@ export class VirLine<
         listener: GenericListener,
     ): boolean {
         const existingKeyedStateListenersIndex = this.stateListeners.findIndex((stateListeners) =>
-            isJsonEqual(stateListeners.selection as any, selection as any),
+            check.jsonEquals(stateListeners.selection as any, selection as any),
         );
 
         const existingKeyedStateListeners = this.stateListeners[existingKeyedStateListenersIndex];
@@ -267,6 +271,7 @@ export class VirLine<
         return true;
     }
 
+    /** Triggers a new update at any time, as long as an update is not already in progress. */
     public async triggerUpdate(): Promise<void> {
         if (this.isCurrentlyUpdating) {
             this.dispatch(new VirLineUpdateSkippedEvent());
@@ -302,11 +307,11 @@ export class VirLine<
             throw error;
         }
 
-        this.fireStateListeners();
+        void this.fireStateListeners();
     }
 
     protected runUpdateLoop() {
-        callAsynchronously(() => this.triggerUpdate());
+        void callAsynchronously(() => this.triggerUpdate());
 
         const executeAgain = () => {
             if (!this.isUpdateLoopPaused) {
@@ -317,10 +322,9 @@ export class VirLine<
         if (this.options.updateLoopInterval === useAnimationFrames) {
             window.requestAnimationFrame(executeAgain);
         } else {
-            const timeoutDuration = convertDuration(
-                this.options.updateLoopInterval,
-                DurationUnit.Milliseconds,
-            );
+            const timeoutDuration = convertDuration(this.options.updateLoopInterval, {
+                milliseconds: true,
+            });
 
             setTimeout(executeAgain, timeoutDuration.milliseconds);
         }
@@ -337,7 +341,7 @@ export class VirLine<
                 this.currentState,
                 stateListener.selection,
             );
-            if (!isDeepEqual(newValue, stateListener.lastValue)) {
+            if (!check.deepEquals(newValue, stateListener.lastValue)) {
                 stateListener.lastValue = cloneDeep(newValue);
                 stateListener.listeners.forEach((listener) => {
                     listenerPromises.push(callAsynchronously(async () => await listener(newValue)));
@@ -406,10 +410,9 @@ export class VirLine<
             return;
         }
 
-        const interval: number = convertDuration(
-            this.options.minUpdateRateCalculationInterval,
-            DurationUnit.Milliseconds,
-        ).milliseconds;
+        const interval: number = convertDuration(this.options.minUpdateRateCalculationInterval, {
+            milliseconds: true,
+        }).milliseconds;
         const millisecondsSinceLastUpdate =
             highResTimestamp - this.updateRateCounters.calculatedAtHighResTimestamp;
 

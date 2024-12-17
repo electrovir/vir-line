@@ -1,8 +1,8 @@
-export * from './events';
-export * from './options';
-export * from './stage';
-export * from './state';
-export * from './vir-line';
-export * from './vir-line-with-state';
+export * from './events.js';
+export * from './options.js';
+export * from './stage.js';
+export * from './state.js';
+export * from './vir-line-with-state.js';
+export * from './vir-line.js';
 
 export type {RemoveListenerCallback} from 'typed-event-target';

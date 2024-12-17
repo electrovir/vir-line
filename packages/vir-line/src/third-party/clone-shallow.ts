@@ -1,4 +1,4 @@
-import {kindOf} from './kind-of';
+import {kindOf} from './kind-of.js';
 /** Since this is external code, I don't care about testing code coverage on it. */
 /* c8 ignore start */
 
@@ -31,6 +31,7 @@ import {kindOf} from './kind-of';
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+// eslint-disable-next-line @typescript-eslint/unbound-method
 const valueOf = Symbol.prototype.valueOf;
 
 export function cloneShallow(value: any) {
@@ -72,7 +73,8 @@ export function cloneShallow(value: any) {
 }
 
 function cloneRegExp(value: any) {
-    const flags = value.flags !== void 0 ? value.flags : /\w+$/.exec(value) || void 0;
+    // eslint-disable-next-line sonarjs/slow-regex
+    const flags = value.flags === void 0 ? /\w+$/.exec(value) || void 0 : value.flags;
     const re = new value.constructor(value.source, flags);
     re.lastIndex = value.lastIndex;
     return re;
@@ -90,11 +92,13 @@ function cloneTypedArray(value: any) {
 
 function cloneBuffer(value: any) {
     const len = value.length;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const buf = Buffer.allocUnsafe ? Buffer.allocUnsafe(len) : Buffer.from(len);
     value.copy(buf);
     return buf;
 }
 
 function cloneSymbol(value: any) {
-    return valueOf ? Object(valueOf.call(value)) : {};
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    return valueOf ? new Object(valueOf.call(value)) : {};
 }

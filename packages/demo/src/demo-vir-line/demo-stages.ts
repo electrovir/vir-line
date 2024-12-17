@@ -30,7 +30,7 @@ function calculateTrianglePoints(center: {x: number; y: number}, size: number) {
     ] as const;
 }
 
-export const renderShapeStage: VirLineStage<{
+export const renderShapeStage = new VirLineStage<{
     canvasSize: {
         width: number;
         height: number;
@@ -49,12 +49,12 @@ export const renderShapeStage: VirLineStage<{
               'fillStyle' | 'fillRect' | 'beginPath' | 'arc' | 'fill' | 'moveTo' | 'lineTo'
           >
         | undefined;
-}> = {
-    stageId: {
+}>(
+    {
         name: 'render shape',
         version: 1,
     },
-    executor({state}) {
+    ({state}) => {
         if (!state.renderContext) {
             /** Nothing to do if there's no render context yet */
             return;
@@ -87,6 +87,7 @@ export const renderShapeStage: VirLineStage<{
             state.renderContext.beginPath();
             state.renderContext.arc(canvasCenter.x, canvasCenter.y, size / 2, 0, Math.PI * 2);
             state.renderContext.fill();
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         } else if (state.shape.type === DemoShapeTypeEnum.Triangle) {
             state.renderContext.beginPath();
             const trianglePoints = calculateTrianglePoints(canvasCenter, size);
@@ -96,36 +97,36 @@ export const renderShapeStage: VirLineStage<{
             state.renderContext.fill();
         }
     },
-};
+);
 
 /** Intentionally cause a rendering stutter. */
-export const renderStutterStage: VirLineStage<{
+export const renderStutterStage = new VirLineStage<{
     shouldStutter: boolean;
-}> = {
-    stageId: {
+}>(
+    {
         name: 'render stutter',
         version: 1,
     },
-    async executor({state}) {
+    async ({state}) => {
         if (!state.shouldStutter) {
             return;
         }
 
-        await wait(1000);
+        await wait({seconds: 1});
 
         state.shouldStutter = false;
     },
-};
+);
 
-export const canvasSizeStage: VirLineStage<{
+export const canvasSizeStage = new VirLineStage<{
     canvasSize: {height: number; width: number};
     canvas: Pick<HTMLCanvasElement, 'height' | 'width'> | undefined;
-}> = {
-    stageId: {
+}>(
+    {
         name: 'canvas size',
         version: 1,
     },
-    executor({state}) {
+    ({state}) => {
         if (!state.canvas) {
             return;
         }
@@ -135,19 +136,19 @@ export const canvasSizeStage: VirLineStage<{
             height: state.canvas.height,
         };
     },
-};
+);
 
-export const debugStage: VirLineStage = {
-    stageId: {
+export const debugStage = new VirLineStage(
+    {
         name: 'debug',
         version: 1,
     },
-    executor() {
+    () => {
         console.info('render');
     },
-};
+);
 
-export const rainbowStage: VirLineStage<{
+export const rainbowStage = new VirLineStage<{
     shape: {
         color: {
             h: number;
@@ -156,20 +157,20 @@ export const rainbowStage: VirLineStage<{
         };
         huePerMillisecond: number;
     };
-}> = {
-    stageId: {
+}>(
+    {
         name: 'rainbow',
         version: 1,
     },
-    executor({state, timeSinceLastUpdate}) {
-        const newHue = wrapNumber({
-            value:
-                state.shape.color.h +
-                timeSinceLastUpdate.milliseconds * state.shape.huePerMillisecond,
-            max: 360,
-            min: 0,
-        });
+    ({state, timeSinceLastUpdate}) => {
+        const newHue = wrapNumber(
+            state.shape.color.h + timeSinceLastUpdate.milliseconds * state.shape.huePerMillisecond,
+            {
+                max: 360,
+                min: 0,
+            },
+        );
 
         state.shape.color.h = newHue;
     },
-};
+);

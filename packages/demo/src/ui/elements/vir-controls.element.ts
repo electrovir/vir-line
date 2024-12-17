@@ -1,16 +1,16 @@
-import {getEnumTypedValues, wrapNumber} from '@augment-vir/common';
+import {getEnumValues, wrapNumber} from '@augment-vir/common';
 import {css, defineElement, defineElementEvent, html} from 'element-vir';
-import {DemoShapeTypeEnum} from '../../demo-vir-line/demo-stages';
+import {DemoShapeTypeEnum} from '../../demo-vir-line/demo-stages.js';
 
-const allPossibleShapeTypes = getEnumTypedValues(DemoShapeTypeEnum);
+const allPossibleShapeTypes = getEnumValues(DemoShapeTypeEnum);
 function getNextShape(currentShape: DemoShapeTypeEnum): DemoShapeTypeEnum {
     const currentIndex = allPossibleShapeTypes.indexOf(currentShape);
-    const nextIndex = wrapNumber({
+    const nextIndex = wrapNumber(currentIndex + 1, {
         max: allPossibleShapeTypes.length - 1,
         min: 0,
-        value: currentIndex + 1,
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return allPossibleShapeTypes[nextIndex] ?? allPossibleShapeTypes[0]!;
 }
 
@@ -31,7 +31,7 @@ export const VirControls = defineElement<{
             align-items: center;
         }
     `,
-    renderCallback({inputs, dispatch, events}) {
+    render({inputs, dispatch, events}) {
         const buttons = [
             {
                 text: inputs.isPaused ? 'Play' : 'Pause',

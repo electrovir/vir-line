@@ -15,14 +15,14 @@ Each stage is intended to directly mutate the state object that it is given.
 ```TypeScript
 import {VirLine, VirLineStage} from 'vir-line';
 
-const countStage: VirLineStage<{count: number}> = {
-    executor({state}) {
-        state.count++;
-    },
-    stageId: {
+const countStage = new VirLineStage<{count: number}>(
+    {
         name: 'counter',
     },
-};
+    ({state}) => {
+        state.count++;
+    },
+);
 
 const virLine = new VirLine(
     [

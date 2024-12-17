@@ -30,7 +30,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-var toString = Object.prototype.toString;
+// eslint-disable-next-line @typescript-eslint/unbound-method
+const toString = Object.prototype.toString;
 
 export function kindOf(value: unknown) {
     if (value === void 0) {
@@ -137,10 +138,11 @@ function ctorName(value: any) {
 }
 
 function isArray(value: any) {
+    // eslint-disable-next-line sonarjs/no-all-duplicated-branches, @typescript-eslint/no-unnecessary-condition
     if (Array.isArray) {
         return Array.isArray(value);
     } else {
-        return value instanceof Array;
+        return Array.isArray(value);
     }
 }
 
@@ -196,7 +198,7 @@ function isArguments(value: any) {
             return true;
         }
     } catch (error) {
-        if ((error as any).message.indexOf('callee') !== -1) {
+        if ((error as any).message.includes('callee')) {
             return true;
         }
     }

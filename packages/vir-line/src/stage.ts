@@ -1,17 +1,14 @@
-import {AnyObject, MaybePromise, isTruthy} from '@augment-vir/common';
+import {check} from '@augment-vir/assert';
+import {AnyObject, MaybePromise} from '@augment-vir/common';
 import {Duration, DurationUnit} from 'date-vir';
 import {EmptyObject} from 'type-fest';
-import {VirLineOptions} from './options';
 
 /**
  * Some simple checks to verify that a set of {@link VirLineStage} instances is a valid set.
  *
- * @category Internals
+ * @category Internal
  */
-export function assertValidStages(
-    stages: ReadonlyArray<Readonly<VirLineStage<any>>>,
-    options: Readonly<Pick<VirLineOptions, 'allowDuplicateStageNames'>>,
-) {
+export function assertValidStages(stages: ReadonlyArray<Readonly<VirLineStage<any>>>) {
     const duplicateStageNames: string[] = [];
     const stageNameSet = new Set<string>();
     stages.forEach((stage) => {
@@ -24,7 +21,7 @@ export function assertValidStages(
         }
     });
 
-    if (duplicateStageNames.length && !options.allowDuplicateStageNames) {
+    if (duplicateStageNames.length) {
         throw new Error(
             `Duplicate stage names provided to VirLine: ${duplicateStageNames.join(', ')}`,
         );
@@ -51,7 +48,7 @@ export type StageExecutorParams<State extends AnyObject> = Readonly<{
 /**
  * An object that identifies a {@link VirLineStage}.
  *
- * @category Internals
+ * @category Internal
  */
 export type StageId = {
     name: string;
@@ -61,14 +58,14 @@ export type StageId = {
 /**
  * Convert a {@link StageId} object into a string.
  *
- * @category Internals
+ * @category Internal
  */
 export function stageIdToString(stageId: Readonly<StageId>): string {
     return [
         stageId.name,
-        stageId.version != undefined ? String(stageId.version) : undefined,
+        stageId.version == undefined ? undefined : String(stageId.version),
     ]
-        .filter(isTruthy)
+        .filter(check.isTruthy)
         .join('@');
 }
 
@@ -79,6 +76,7 @@ export function stageIdToString(stageId: Readonly<StageId>): string {
  * @category Stage
  */
 export type StageExecutor<State extends AnyObject> = (
+    this: void,
     stageParams: StageExecutorParams<State>,
 ) => MaybePromise<void>;
 
@@ -87,7 +85,9 @@ export type StageExecutor<State extends AnyObject> = (
  *
  * @category Stage
  */
-export type VirLineStage<State extends AnyObject = EmptyObject> = {
-    stageId: Readonly<StageId>;
-    executor: StageExecutor<State>;
-};
+export class VirLineStage<State extends AnyObject = EmptyObject> {
+    constructor(
+        public readonly stageId: Readonly<StageId>,
+        public readonly executor: StageExecutor<NoInfer<State>>,
+    ) {}
+}

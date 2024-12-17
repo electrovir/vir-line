@@ -5,7 +5,7 @@ import {
     rainbowStage,
     renderShapeStage,
     renderStutterStage,
-} from './demo-stages';
+} from './demo-stages.js';
 
 export type DemoPipeline = ReturnType<typeof createDemoPipeline>;
 export type DemoState = DemoPipeline['stateType'];

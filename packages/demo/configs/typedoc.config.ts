@@ -14,9 +14,7 @@ export const typeDocConfig: Partial<TypeDocOptions> = {
     intentionallyNotExported: [],
     defaultCategory: 'MISSING CATEGORY',
     categoryOrder: [
-        'VirLine',
-        'Stage',
-        'Events',
+        'Main',
         'Internal',
     ],
 };

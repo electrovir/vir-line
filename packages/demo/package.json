@@ -1,26 +1,38 @@
 {
     "name": "@evir/vir-line-demo",
-    "version": "1.1.5",
+    "version": "2.0.0",
     "private": true,
+    "homepage": "https://github.com/electrovir/vir-line",
+    "bugs": {
+        "url": "https://github.com/electrovir/vir-line/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/electrovir/vir-line.git"
+    },
+    "license": "(MIT or CC0 1.0)",
+    "author": {
+        "name": "electrovir",
+        "url": "https://github.com/electrovir"
+    },
+    "type": "module",
     "scripts": {
         "build": "virmator frontend build",
-        "compile": "rm -rf dist && tsc -b -f --pretty",
-        "start": "nodemon --config configs/nodemon.json",
-        "test:all": "npm run build"
+        "compile": "virmator compile",
+        "start": "virmator frontend",
+        "test": "exit 0;"
     },
     "dependencies": {
-        "@augment-vir/common": "^29.1.5",
-        "element-vir": "^22.2.2",
-        "run-time-assertions": "^1.5.1",
-        "type-fest": "^4.20.1",
-        "vir-line": "*"
+        "@augment-vir/assert": "^31.1.1",
+        "@augment-vir/common": "^31.1.1",
+        "element-vir": "^23.1.1",
+        "type-fest": "^4.30.2",
+        "vir-line": "^2.0.0"
     },
-    "devDependencies": {
-        "@augment-vir/node-js": "^29.1.5",
-        "esbuild": "^0.22.0",
-        "nodemon": "^3.1.4",
-        "typescript": "^5.5.2",
-        "vite": "^4.5.0",
-        "vite-tsconfig-paths": "^4.3.2"
+    "engines": {
+        "node": ">=22"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }

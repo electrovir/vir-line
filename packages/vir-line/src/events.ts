@@ -1,7 +1,7 @@
 import {AnyObject} from '@augment-vir/common';
 import {defineTypedCustomEvent, defineTypedEvent} from 'typed-event-target';
-import {VirLineStage} from './stage';
-import {StagesToFullState, VirLineStateUpdateRate} from './state';
+import {VirLineStage} from './stage.js';
+import {StagesToFullState, VirLineStateUpdateRate} from './state.js';
 
 /**
  * A union of all possible events that a `VirLine` instance can emit. This does not include state
@@ -67,5 +67,9 @@ export class VirLineErrorEvent extends defineTypedCustomEvent<Error>()('vir-line
  */
 export class VirLineUpdateSkippedEvent extends defineTypedEvent('vir-line-update-skipped') {}
 
-/** An event that is emitted from a `VirLine` instance when it is destroyed. */
+/**
+ * An event that is emitted from a `VirLine` instance when it is destroyed.
+ *
+ * @category Events
+ */
 export class VirLineDestroyEvent extends defineTypedEvent('vir-line-destroy') {}

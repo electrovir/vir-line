@@ -1,5 +1,5 @@
-import {itCases} from '@augment-vir/browser-testing';
-import {stageIdToString} from './stage';
+import {describe, itCases} from '@augment-vir/test';
+import {stageIdToString} from './stage.js';
 
 describe(stageIdToString.name, () => {
     itCases(stageIdToString, [

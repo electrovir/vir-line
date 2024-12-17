@@ -1,3 +1,4 @@
+import {assert} from '@augment-vir/assert';
 import {ensureError, extractErrorMessage} from '@augment-vir/common';
 import {
     css,
@@ -7,7 +8,6 @@ import {
     onDomCreated,
     onResize,
 } from 'element-vir';
-import {assertInstanceOf} from 'run-time-assertions';
 
 export const VirCanvas = defineElementNoInputs({
     tagName: 'vir-canvas',
@@ -38,7 +38,7 @@ export const VirCanvas = defineElementNoInputs({
     stateInitStatic: {
         canvasError: undefined as undefined | Error,
     },
-    renderCallback({state, updateState, dispatch, events}) {
+    render({state, updateState, dispatch, events}) {
         if (state.canvasError) {
             return html`
                 <p class="error">${extractErrorMessage(state.canvasError)}</p>
@@ -50,7 +50,7 @@ export const VirCanvas = defineElementNoInputs({
                 class="canvas-wrapper"
                 ${onResize((size) => {
                     const canvas = size.target.querySelector('canvas');
-                    assertInstanceOf(canvas, HTMLCanvasElement);
+                    assert.instanceOf(canvas, HTMLCanvasElement);
                     canvas.width = size.contentRect.width;
                     canvas.height = size.contentRect.height;
                 })}
@@ -58,7 +58,7 @@ export const VirCanvas = defineElementNoInputs({
                 <canvas
                     ${onDomCreated((element) => {
                         try {
-                            assertInstanceOf(element, HTMLCanvasElement);
+                            assert.instanceOf(element, HTMLCanvasElement);
                             dispatch(new events.canvasCreate(element));
                         } catch (caught) {
                             updateState({canvasError: ensureError(caught)});

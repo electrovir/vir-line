@@ -1,13 +1,13 @@
-import {VirLine, VirLineStage} from '../index';
+import {VirLine, VirLineStage} from '../index.js';
 
-const countStage: VirLineStage<{count: number}> = {
-    executor({state}) {
-        state.count++;
-    },
-    stageId: {
+const countStage = new VirLineStage<{count: number}>(
+    {
         name: 'counter',
     },
-};
+    ({state}) => {
+        state.count++;
+    },
+);
 
 const virLine = new VirLine(
     [

@@ -1,11 +1,17 @@
 import {AnyDuration} from 'date-vir';
 
-export const useAnimationFrames = 'animation frames' as const;
+/**
+ * The string used in {@link VirLineOptions['updateLoopInterval']} to indicate that the update loop
+ * should be tied to animation frames.
+ *
+ * @category Internal
+ */
+export const useAnimationFrames = 'animation frames';
 
 /**
  * Options supported by the `VirLine` class.
  *
- * @category Main
+ * @category VirLine
  */
 export type VirLineOptions = {
     /** These options can only be set on initial `VirLine` construction. */
@@ -30,15 +36,6 @@ export type VirLineOptions = {
      * @default 'animation frames' // AKA the variable `useAnimationFrames`
      */
     updateLoopInterval: typeof useAnimationFrames | AnyDuration;
-
-    /**
-     * Allow duplicate stage names. By default, this is not allowed and if any duplicate names
-     * exist, `VirLine` will throw an error.
-     *
-     * @deprecated This is discouraged.
-     * @default false
-     */
-    allowDuplicateStageNames: boolean;
 
     /**
      * The minimum interval between state update rate calculations.
@@ -75,8 +72,12 @@ export type VirLineOptions = {
     targetUpdateRate: number | undefined;
 };
 
+/**
+ * The default value for {@link VirLineOptions}.
+ *
+ * @category Internal
+ */
 export const defaultVirLineOptions: VirLineOptions = {
-    allowDuplicateStageNames: false,
     enableLogging: false,
     targetUpdateRate: undefined,
     init: {
