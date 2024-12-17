@@ -10,6 +10,7 @@ export default defineConfig(
         return {
             ...baseConfig,
             build: {
+                ...baseConfig.build,
                 outDir: join(basePaths.cwd, 'dist-pages'),
             },
             resolve: {
