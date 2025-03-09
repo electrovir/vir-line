@@ -89,5 +89,5 @@ export interface VirLineWithState<State extends AnyObject = any> {
         listener: GenericListener,
     ): boolean;
     /** Triggers a new update at any time, as long as an update is not already in progress. */
-    triggerUpdate(): Promise<void>;
+    triggerUpdate(): Promise<boolean>;
 }

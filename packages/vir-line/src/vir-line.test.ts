@@ -18,8 +18,8 @@ describe(VirLine.name, () => {
     function withVirLine<const Stages extends ReadonlyArray<Readonly<VirLineStage<any>>>>(
         stages: Readonly<Stages>,
         startState: StagesToFullState<NoInfer<Stages>>,
+        options: Readonly<PartialDeep<VirLineOptions>>,
         callback: (args: {virLine: VirLine<NoInfer<Stages>>}) => MaybePromise<void>,
-        options?: Readonly<PartialDeep<VirLineOptions>>,
     ) {
         return async () => {
             const virLine = new VirLine(stages as any, startState, options);
@@ -46,21 +46,22 @@ describe(VirLine.name, () => {
             {
                 count: 0,
             },
-            async ({virLine}) => {
-                await waitUntil.isTruthy(() => virLine.currentState.count > 5);
-
-                virLine.destroy();
-                const countAtDestruction = virLine.currentState.count;
-
-                await wait({seconds: 2});
-
-                assert.strictEquals(countAtDestruction, virLine.currentState.count);
-            },
             {
                 updateLoopInterval: {milliseconds: 1},
                 init: {
                     startUpdateLoopImmediately: true,
                 },
+            },
+            async ({virLine}) => {
+                await waitUntil.isTruthy(() => virLine.currentState.count > 5);
+
+                virLine.destroy();
+                await wait({seconds: 1});
+                const countAtDestruction = virLine.currentState.count;
+
+                await wait({seconds: 2});
+
+                assert.strictEquals(countAtDestruction, virLine.currentState.count);
             },
         ),
     );
@@ -81,6 +82,7 @@ describe(VirLine.name, () => {
             {
                 count: 0,
             },
+            {},
             async ({virLine}) => {
                 virLine.startUpdateLoop();
 
@@ -96,6 +98,10 @@ describe(VirLine.name, () => {
         withVirLine(
             [],
             {},
+            {
+                updateLoopInterval: {milliseconds: 1},
+                minUpdateRateCalculationInterval: {milliseconds: 1},
+            },
             async ({virLine}) => {
                 let updatesPerSecond = 0;
 
@@ -106,10 +112,6 @@ describe(VirLine.name, () => {
 
                 await waitUntil.isTruthy(() => updatesPerSecond > 0);
             },
-            {
-                updateLoopInterval: {milliseconds: 1},
-                minUpdateRateCalculationInterval: {milliseconds: 1},
-            },
         ),
     );
 
@@ -118,6 +120,10 @@ describe(VirLine.name, () => {
         withVirLine(
             [],
             {},
+            {
+                updateLoopInterval: {milliseconds: 1},
+                minUpdateRateCalculationInterval: undefined,
+            },
             async ({virLine}) => {
                 let updatesPerSecond = 0;
 
@@ -130,10 +136,6 @@ describe(VirLine.name, () => {
 
                 virLine.destroy();
                 assert.strictEquals(updatesPerSecond, 0);
-            },
-            {
-                updateLoopInterval: {milliseconds: 1},
-                minUpdateRateCalculationInterval: undefined,
             },
         ),
     );
@@ -152,17 +154,18 @@ describe(VirLine.name, () => {
                 ),
             ],
             {},
+            {},
             async ({virLine}) => {
                 let error: Error | undefined;
 
                 virLine.listen(VirLineErrorEvent, (event) => {
                     error = event.detail;
                 });
-                await virLine.triggerUpdate();
+                assert.isTrue(await virLine.triggerUpdate());
 
-                await waitUntil.isTruthy(() => error);
+                assert.isDefined(error);
 
-                assert.strictEquals(error?.message, "Stage 'intentional failure' failed: FAIL");
+                assert.strictEquals(error.message, "Stage 'intentional failure' failed: FAIL");
             },
         ),
     );
@@ -189,6 +192,7 @@ describe(VirLine.name, () => {
                 value: {nested: 'started'},
                 count: 0,
             },
+            {},
             async ({virLine}) => {
                 let updatedValue = '';
 
@@ -205,7 +209,7 @@ describe(VirLine.name, () => {
                 );
 
                 await waitUntil.isTruthy(async () => {
-                    await virLine.triggerUpdate();
+                    assert.isTrue(await virLine.triggerUpdate());
                     return updatedValue;
                 });
                 assert.strictEquals(updatedValue, 'finished');
@@ -214,7 +218,7 @@ describe(VirLine.name, () => {
                 assert.isFalse(unListen());
 
                 await waitUntil.isTruthy(async () => {
-                    await virLine.triggerUpdate();
+                    assert.isTrue(await virLine.triggerUpdate());
 
                     return virLine.currentState.count > 25;
                 });
@@ -238,6 +242,7 @@ describe(VirLine.name, () => {
             {
                 value: {nested: 'started'},
             },
+            {},
             async ({virLine}) => {
                 let updatedValue: {nested: string} | undefined;
 
@@ -250,12 +255,13 @@ describe(VirLine.name, () => {
                         updatedValue = cloneDeep(newNested);
                     },
                 );
-                await virLine.triggerUpdate();
+
+                assert.isTrue(await virLine.triggerUpdate());
 
                 assert.deepEquals(
                     updatedValue as AnyObject,
                     {nested: 'started'},
-                    'state should not have updated yet',
+                    'state should not have updated yet 1',
                 );
 
                 virLine.currentState.value.nested = 'yo';
@@ -263,15 +269,15 @@ describe(VirLine.name, () => {
                 assert.deepEquals(
                     updatedValue as AnyObject,
                     {nested: 'started'},
-                    'state should not have updated yet',
+                    'state should not have updated yet 2',
                 );
 
-                await virLine.triggerUpdate();
+                assert.isTrue(await virLine.triggerUpdate());
 
                 assert.deepEquals(
                     updatedValue as AnyObject,
                     {nested: 'yo'},
-                    'state should not have updated yet',
+                    'state should have updated',
                 );
             },
         ),
@@ -291,6 +297,7 @@ describe(VirLine.name, () => {
             {
                 hi: 'five',
             },
+            {},
             ({virLine}) => {
                 virLine.listenToState(false, {hi: false}, () => {});
 
@@ -302,7 +309,7 @@ describe(VirLine.name, () => {
 
     it(
         "can't start or pause twice",
-        withVirLine([], {}, ({virLine}) => {
+        withVirLine([], {}, {}, ({virLine}) => {
             assert.isTrue(virLine.startUpdateLoop());
             assert.isFalse(virLine.startUpdateLoop());
 
@@ -313,7 +320,7 @@ describe(VirLine.name, () => {
 
     it(
         'rejects accessing stateType',
-        withVirLine([], {}, ({virLine}) => {
+        withVirLine([], {}, {}, ({virLine}) => {
             assert.throws(() => virLine.stateType, {
                 matchMessage: "Access to 'stateType' is only allowed as a type.",
             });
@@ -336,6 +343,7 @@ describe(VirLine.name, () => {
             {
                 hi: 'five',
             },
+            {},
             async ({virLine}) => {
                 const values: string[] = [];
 
@@ -348,11 +356,11 @@ describe(VirLine.name, () => {
 
                 assert.isTrue(unListen1());
 
-                await virLine.triggerUpdate();
+                assert.isTrue(await virLine.triggerUpdate());
 
                 unListen2();
 
-                await virLine.triggerUpdate();
+                assert.isTrue(await virLine.triggerUpdate());
 
                 assert.deepEquals(values, [
                     'five',
@@ -402,6 +410,7 @@ describe(VirLine.name, () => {
                 },
                 c: {},
             },
+            {},
             ({virLine}) => {
                 let value: unknown;
 
@@ -419,12 +428,12 @@ describe(VirLine.name, () => {
         withVirLine(
             [],
             {},
+            {
+                enableLogging: true,
+            },
             ({virLine}) => {
                 void virLine.triggerUpdate();
                 virLine.destroy();
-            },
-            {
-                enableLogging: true,
             },
         ),
     );
@@ -459,11 +468,11 @@ describe(VirLine.name, () => {
         });
 
         const firstUpdate = virLine.triggerUpdate();
-        await virLine.triggerUpdate();
-        await virLine.triggerUpdate();
+        assert.isFalse(await virLine.triggerUpdate());
+        assert.isFalse(await virLine.triggerUpdate());
         deferredPromise.resolve();
         await firstUpdate;
-        await virLine.triggerUpdate();
+        assert.isTrue(await virLine.triggerUpdate());
 
         assert.strictEquals(virLine.currentState.count, 2);
         assert.strictEquals(skippedCount, 2);
@@ -522,6 +531,7 @@ describe(VirLine.name, () => {
                 count: 0,
                 entries: {},
             },
+            {},
             async ({virLine}) => {
                 const dataReceived: Record<string, Record<string, number>>[] = [];
 
@@ -529,10 +539,10 @@ describe(VirLine.name, () => {
                     dataReceived.push(data);
                 });
 
-                await virLine.triggerUpdate();
-                await virLine.triggerUpdate();
-                await virLine.triggerUpdate();
-                await virLine.triggerUpdate();
+                assert.isTrue(await virLine.triggerUpdate());
+                assert.isTrue(await virLine.triggerUpdate());
+                assert.isTrue(await virLine.triggerUpdate());
+                assert.isTrue(await virLine.triggerUpdate());
 
                 assert.deepEquals(dataReceived, [
                     {},

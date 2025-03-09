@@ -37,6 +37,40 @@ import {cloneDeep} from './third-party/clone-deep.js';
 export class VirLine<
     const Stages extends ReadonlyArray<Readonly<VirLineStage<any>>>,
 > extends ListenTarget<VirLineEvents<Stages>> {
+    constructor(
+        /**
+         * The stages which this {@link VirLine} instance will execute on each state update. These
+         * stages will also determine the overall State type for this instance.
+         */
+        public readonly stages: Readonly<Stages>,
+        /**
+         * The initial state for this {@link VirLine} instance.
+         *
+         * **WARNING**: the contents of this object _will_ get mutated.
+         */
+        initialState: StagesToFullState<NoInfer<Stages>>,
+        /**
+         * All options for this {@link VirLine} instance. This can also be updated after construction
+         * via {@link VirLine['updateOptions']}.
+         *
+         * @default defaultVirLineOptions
+         */
+        initOptions?: Readonly<PartialDeep<VirLineOptions>>,
+    ) {
+        super();
+
+        this.currentState = {...initialState};
+        if (initOptions) {
+            this.updateOptions(initOptions);
+        }
+
+        assertValidStages(stages);
+
+        if (this.options.init.startUpdateLoopImmediately) {
+            this.startUpdateLoop();
+        }
+    }
+
     /**
      * All current {@link VirLineOptions} saved to this {@link VirLine} instance. This is externally
      * readonly. To update it, use {@link VirLine['updateOptions']}. This can also be set on
@@ -99,40 +133,6 @@ export class VirLine<
      * {@link VirLine['removeStateListener']}.
      */
     private stateListeners: KeyedStateListeners[] = [];
-
-    constructor(
-        /**
-         * The stages which this {@link VirLine} instance will execute on each state update. These
-         * stages will also determine the overall State type for this instance.
-         */
-        public readonly stages: Readonly<Stages>,
-        /**
-         * The initial state for this {@link VirLine} instance.
-         *
-         * **WARNING**: the contents of this object _will_ get mutated.
-         */
-        initialState: StagesToFullState<NoInfer<Stages>>,
-        /**
-         * All options for this {@link VirLine} instance. This can also be updated after construction
-         * via {@link VirLine['updateOptions']}.
-         *
-         * @default defaultVirLineOptions
-         */
-        initOptions?: Readonly<PartialDeep<VirLineOptions>>,
-    ) {
-        super();
-
-        this.currentState = {...initialState};
-        if (initOptions) {
-            this.updateOptions(initOptions);
-        }
-
-        assertValidStages(stages);
-
-        if (this.options.init.startUpdateLoopImmediately) {
-            this.startUpdateLoop();
-        }
-    }
 
     /**
      * Modifies the current options. All provided options are deeply merged with the existing
@@ -271,15 +271,20 @@ export class VirLine<
         return true;
     }
 
-    /** Triggers a new update at any time, as long as an update is not already in progress. */
-    public async triggerUpdate(): Promise<void> {
+    /**
+     * Triggers a new update at any time, as long as an update is not already in progress.
+     *
+     * @returns Whether the update was triggered or not. (It won't be triggered if there is already
+     *   an update in progress).
+     */
+    public async triggerUpdate(): Promise<boolean> {
         if (this.isCurrentlyUpdating) {
             this.dispatch(new VirLineUpdateSkippedEvent());
             if (this.options.enableLogging) {
                 console.warn('Update skipped: another is still in progress.');
             }
             /** Skip the current update if a previous update is still executing. */
-            return undefined;
+            return false;
         }
 
         this.isCurrentlyUpdating = true;
@@ -291,13 +296,7 @@ export class VirLine<
         this.lastStateUpdateHighResTimestamp = highResTimestamp;
         this.updateRateCounters.updateCount++;
 
-        if (this.options.enableLogging) {
-            console.info(`updating state at: ${highResTimestamp}`);
-        }
         const error = await this.runStateUpdate(highResTimestamp, timeSinceLastUpdate);
-        if (this.options.enableLogging) {
-            console.info(`state update took: ${performance.now() - highResTimestamp}`);
-        }
 
         this.isCurrentlyUpdating = false;
 
@@ -307,7 +306,8 @@ export class VirLine<
             throw error;
         }
 
-        void this.fireStateListeners();
+        await this.fireStateListeners();
+        return true;
     }
 
     protected runUpdateLoop() {
@@ -362,7 +362,9 @@ export class VirLine<
                 'state'
             > = {
                 timeSinceLastUpdate,
-                updateStartTime: {milliseconds: highResTimestamp},
+                updateStartTime: {
+                    milliseconds: highResTimestamp,
+                },
             };
             await awaitedForEach(this.stages, async (stage) => {
                 const stageParams: StageExecutorParams<typeof this.stateType> = {

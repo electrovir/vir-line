@@ -1,1 +1,2 @@
 -   add proper docs
+-   replace `enableLogging` with a logger input
